@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" name="viewport" />
+    <title>Live Route Visualization</title>
+    <meta content="noindex, nofollow" name="robots" />
+    <meta content="" name="description" />
+    <meta content="" name="keywords" />
+    <!-- Favicons -->
+    <link href="files/favicon.png" rel="icon" />
+    <link href="files/apple-touch-icon.png" rel="apple-touch-icon" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.gstatic.com/" rel="preconnect" />
+    <link href="files/css.css" rel="stylesheet" />
+    <!-- Vendor CSS Files -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link href="files/bootstrap.min.css" rel="stylesheet" />
+    <link href="files/bootstrap-icons.css" rel="stylesheet" />
+    <link href="files/boxicons.min.css" rel="stylesheet" />
+    <link href="files/quill.snow.css" rel="stylesheet" />
+    <link href="files/quill.bubble.css" rel="stylesheet" />
+    <link href="files/remixicon.css" rel="stylesheet" />
+    <link href="files/style.css" rel="stylesheet" />
+    <!-- Template Main CSS File -->
+    <link href="files/style_002.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBsgRa2Jy4Fep0LoGsR9XRP6evoyDSyTyE&libraries=marker"></script>
+    
+    <style>
+      /* Additional styles */
+      * {
+        box-sizing: border-box;
+      }
+      
+      body {
+        overflow-x: hidden;
+      }
+      
+      .main-content {
+        padding: 20px;
+        height: calc(100vh - 120px);
+        overflow: hidden;
+      }
+      
+      .route-container {
+        display: flex;
+        gap: 20px;
+        height: 100%;
+      }
+      
+      /* Left panel - route list and info */
+      .route-sidebar {
+        width: 380px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: width 0.3s ease;
+      }
+      
+      .route-sidebar.collapsed {
+        width: 50px;
+      }
+      
+      .route-sidebar.collapsed .route-list-section,
+      .route-sidebar.collapsed .route-info-section,
+      .route-sidebar.collapsed .route-header h2,
+      .route-sidebar.collapsed .search-box,
+      .route-sidebar.collapsed .bus-grid,
+      .route-sidebar.collapsed .toggle-btn span {
+        display: none;
+      }
+      
+      .route-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eef2f6;
+      }
+      
+      .route-header h2 {
+        font-size: 18px;
+        color: #1e293b;
+        margin: 0;
+        font-weight: 600;
+      }
+      
+      .toggle-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+      
+      .toggle-btn:hover {
+        background: #f1f5f9;
+      }
+      
+      /* Route list section */
+      .route-list-section {
+        padding: 12px;
+        border-bottom: 1px solid #eef2f6;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+      
+      .search-box {
+        width: 100%;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      
+      .bus-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      
+      .bus-button {
+        width: 40px;
+        height: 40px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.2s;
+        font-size: 14px;
+        flex: 0 0 auto;
+      }
+      
+      .bus-button:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+      }
+      
+      .bus-button.selected {
+        background: #155eef;
+        color: white;
+        border-color: #155eef;
+      }
+      
+      /* Route info section */
+      .route-info-section {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        background: #fafbfc;
+      }
+      
+      .loading {
+        text-align: center;
+        padding: 30px;
+        color: #64748b;
+        font-size: 14px;
+      }
+      
+      .info-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .info-header h3 {
+        font-size: 18px;
+        color: #0f172a;
+        margin: 0;
+        font-weight: 600;
+      }
+      
+      .direction-buttons {
+        display: flex;
+        gap: 4px;
+      }
+      
+      .direction-btn {
+        padding: 4px 10px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: all 0.2s;
+        min-width: 40px;
+      }
+      
+      .direction-btn:hover {
+        background: #f8fafc;
+      }
+      
+      .direction-btn.active {
+        background: #155eef;
+        color: white;
+        border-color: #155eef;
+      }
+      
+      .info-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      
+      .stat-item {
+        background: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #eef2f6;
+      }
+      
+      .stat-label {
+        color: #64748b;
+        font-size: 11px;
+        margin-bottom: 2px;
+      }
+      
+      .stat-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+      
+      .route-path {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #eef2f6;
+        font-size: 13px;
+        flex-wrap: wrap;
+      }
+      
+      .route-number {
+        background: #155eef;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      
+      .route-points {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #334155;
+        min-width: 150px;
+        flex-wrap: wrap;
+      }
+      
+      .route-points span {
+        white-space: nowrap;
+      }
+      
+      .details-list {
+        margin-bottom: 16px;
+      }
+      
+      .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eef2f6;
+        font-size: 13px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .detail-item:last-child {
+        border-bottom: none;
+      }
+      
+      .detail-label {
+        color: #64748b;
+      }
+      
+      .detail-value {
+        font-weight: 500;
+        color: #0f172a;
+      }
+      
+      .stops-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .stops-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0;
+      }
+      
+      .show-stops-btn {
+        background: #155eef;
+        color: white;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      
+      .show-stops-btn:hover {
+        background: #1e4f9e;
+      }
+      
+      .stops-list {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+      
+      .stops-list.show {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 8px;
+      }
+      
+      .stop-item {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      
+      .stop-item:hover {
+        background: #f1f5f9;
+      }
+      
+      .stop-line {
+        position: relative;
+        width: 16px;
+        flex-shrink: 0;
+      }
+      
+      .stop-line-vertical {
+        width: 2px;
+        height: 100%;
+        background: #cbd5e1;
+        margin-left: 7px;
+      }
+      
+      .stop-dot {
+        width: 8px;
+        height: 8px;
+        background: #155eef;
+        border: 2px solid white;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 4px;
+        transform: translateY(-50%);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      
+      .stop-info {
+        flex: 1;
+        word-break: break-word;
+      }
+      
+      .stop-name {
+        font-weight: 500;
+        word-break: break-word;
+      }
+      
+      /* Map panel */
+      .map-wrapper {
+        flex: 1;
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      }
+      
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+      
+      /* Responsive - Mobile */
+      @media (max-width: 768px) {
+        .main-content {
+          padding: 10px;
+          height: calc(100vh - 100px);
+        }
+        
+        .route-container {
+          flex-direction: column;
+          gap: 10px;
+        }
+        
+        .route-sidebar {
+          width: 100% !important;
+          max-height: 50vh;
+        }
+        
+        .route-sidebar.collapsed {
+          max-height: 50px;
+          min-height: 50px;
+        }
+        
+        .route-list-section {
+          max-height: 150px;
+        }
+        
+        .bus-grid {
+          justify-content: flex-start;
+        }
+        
+        .bus-button {
+          width: 36px;
+          height: 36px;
+          font-size: 13px;
+        }
+        
+        .route-info-section {
+          padding: 12px;
+        }
+        
+        .info-stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        
+        .route-path {
+          flex-direction: row;
+          align-items: center;
+        }
+        
+        .route-points {
+          min-width: auto;
+        }
+        
+        .map-wrapper {
+          height: 45vh;
+          min-height: 300px;
+        }
+        
+        /* Header and footer adjustments */
+        .header {
+          padding: 8px;
+        }
+        
+        .footer {
+          padding: 8px;
+          font-size: 12px;
+          text-align: center;
+        }
+        
+        .footer .copyright,
+        .footer .credits {
+          float: none;
+          text-align: center;
+        }
+        
+        /* Sidebar adjustments */
+        .sidebar {
+          width: 250px;
+        }
+      }
+      
+      /* Small mobile devices */
+      @media (max-width: 480px) {
+        .route-points {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+        
+        .info-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .direction-buttons {
+          width: 100%;
+          justify-content: flex-start;
+        }
+        
+        .stat-item {
+          padding: 6px 8px;
+        }
+        
+        .stat-value {
+          font-size: 14px;
+        }
+        
+        .map-wrapper {
+          height: 40vh;
+        }
+      }
+      
+      /* Landscape mode on mobile */
+      @media (max-width: 768px) and (orientation: landscape) {
+        .route-container {
+          flex-direction: row;
+        }
+        
+        .route-sidebar {
+          width: 300px;
+          max-height: none;
+        }
+        
+        .map-wrapper {
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ======= Header ======= -->
+    <header class="header fixed-top d-flex align-items-center" id="header">
+      <div class="d-flex align-items-center justify-content-between">
+        <a class="logo d-flex align-items-center" href="index.html">
+          <img alt="AYNA Logo" src="files/logo.png" />
+          <img alt="AYNA" src="files/ayna.png" />
+          <img alt="AYNA Text" src="files/yazi.png" />
+        </a>
+        <i class="bi bi-list toggle-sidebar-btn"></i>
+      </div>
+    </header>
+    <!-- End Header -->
+
+    <!-- ======= Sidebar ======= -->
+    <aside class="sidebar" id="sidebar">
+      <ul class="sidebar-nav" id="sidebar-nav">
+        <li class="nav-item">
+          <a class="nav-link collapsed" href="index.html">
+            <i class="bi bi-map"></i>
+            <span>Regional Demographics Map</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link collapsed" href="Bus-Registration.html">
+            <i class="bi bi-layout-text-window-reverse"></i>
+            <span>Bus Registration & Volume Analytics</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="Live-Route-Visualization.html">
+            <i class="bi bi-geo"></i>
+            <span>Live Route Visualization</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+    <!-- End Sidebar-->
+
+    <main id="main" class="main">
+      <div class="main-content">
+        <div class="route-container">
+          <!-- Left panel - route list and info (top-bottom) -->
+          <div class="route-sidebar" id="routeSidebar">
+            <div class="route-header">
+              <h2>Routes</h2>
+              <button class="toggle-btn" onclick="toggleSidebar()">
+                <i class="bi bi-chevron-left"></i>
+                <span>Collapse</span>
+              </button>
+            </div>
+            
+            <!-- Route list (top) -->
+            <div class="route-list-section">
+              <input 
+                type="text" 
+                class="search-box" 
+                placeholder="Search route (by number)"
+                id="searchInput"
+              >
+              
+              <div class="bus-grid" id="busGrid">
+                <div class="loading">Loading...</div>
+              </div>
+            </div>
+
+            <!-- Route info (bottom) -->
+            <div class="route-info-section" id="infoPanel">
+              <div class="loading">Select a route</div>
+            </div>
+          </div>
+
+          <!-- Right panel - map -->
+          <div class="map-wrapper">
+            <div id="map"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <!-- End #main -->
+
+    <!-- ======= Footer ======= -->
+    <footer class="footer" id="footer">
+      <div class="copyright">
+        © <span id="foot-year"></span>
+        <strong>
+          <span>AYNA Azerbaijan Land Transport Agency</span>
+        </strong>. All rights reserved.
+      </div>
+      <div class="credits">
+        Developed by: <a href="#">Kanan Gurbanli</a>
+      </div>
+    </footer>
+    <!-- End Footer -->
+
+    <a class="back-to-top d-flex align-items-center justify-content-center" href="#">
+      <i class="bi bi-arrow-up-short"></i>
+    </a>
+
+    <!-- Vendor JS Files -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/v/bs5/dt-2.1.6/r-3.0.3/fh-4.0.1/datatables.min.js"></script>
+    <script src="files/apexcharts.min.js"></script>
+    <script src="files/bootstrap.bundle.min.js"></script>
+    <script src="files/chart.umd.js"></script>
+    <script src="files/echarts.min.js"></script>
+    <script src="files/quill.js"></script>
+    <script src="files/simple-datatables.js"></script>
+    <script src="files/tinymce.min.js"></script>
+    <script src="files/validate.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="files/main.js"></script>
+
+    <script>
+      document.getElementById("foot-year").textContent = new Date().getFullYear();
+    </script>
+
+    <script>
+      // API base URL
+      const API_URL = 'https://map-api.ayna.gov.az';
+
+      // State variables
+      let busList = [];
+      let selectedBus = null;
+      let searchTerm = '';
+      let direction = 'FORWARD';
+      let map = null;
+      let currentPolyline = null;
+      let stopMarkers = [];
+      let showStops = false;
+
+      // Elements
+      const busGrid = document.getElementById('busGrid');
+      const infoPanel = document.getElementById('infoPanel');
+      const searchInput = document.getElementById('searchInput');
+
+      // Event listener - search
+      searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value.toUpperCase();
+        renderBusList();
+      });
+
+      // Toggle sidebar
+      window.toggleSidebar = function() {
+        const sidebar = document.getElementById('routeSidebar');
+        const toggleBtn = document.querySelector('.toggle-btn i');
+        const toggleText = document.querySelector('.toggle-btn span');
+        
+        sidebar.classList.toggle('collapsed');
+        
+        if (sidebar.classList.contains('collapsed')) {
+          toggleBtn.classList.remove('bi-chevron-left');
+          toggleBtn.classList.add('bi-chevron-right');
+          toggleText.textContent = 'Expand';
+        } else {
+          toggleBtn.classList.remove('bi-chevron-right');
+          toggleBtn.classList.add('bi-chevron-left');
+          toggleText.textContent = 'Collapse';
+        }
+      };
+
+      // Initialize map
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: 40.4093, lng: 49.8671 },
+          zoom: 12,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true
+        });
+      }
+
+      // Fetch bus list from API
+      async function fetchBusList() {
+        try {
+          const response = await fetch(`${API_URL}/api/bus/getBusList`);
+          busList = await response.json();
+          renderBusList();
+        } catch (error) {
+          console.error('Error:', error);
+          busGrid.innerHTML = '<div class="loading">Error occurred</div>';
+        }
+      }
+
+      // Fetch selected bus details from API
+      async function fetchBusDetails(busId) {
+        try {
+          infoPanel.innerHTML = '<div class="loading">Loading...</div>';
+          
+          const response = await fetch(`${API_URL}/api/bus/getBusById?id=${busId}`);
+          const data = await response.json();
+          
+          selectedBus = data;
+          
+          const route = data.routes?.find(
+            r => r.directionTypeId === (direction === 'FORWARD' ? 1 : 2)
+          );
+          
+          const filteredStops = data.stops?.filter(
+            stop => stop.directionTypeId === (direction === 'FORWARD' ? 1 : 2)
+          ) || [];
+          
+          selectedBus.currentRoute = route;
+          selectedBus.currentStops = filteredStops;
+          selectedBus.allStops = data.stops || [];
+          
+          renderBusDetails();
+          drawRouteOnMap(route, filteredStops);
+        } catch (error) {
+          console.error('Error:', error);
+          infoPanel.innerHTML = '<div class="loading">Error occurred</div>';
+        }
+      }
+
+      // Toggle stops visibility
+      function toggleStops() {
+        showStops = !showStops;
+        const button = document.getElementById('toggleStopsBtn');
+        button.textContent = showStops ? 'Hide' : 'Show';
+        
+        if (showStops && selectedBus?.currentStops) {
+          drawStops(selectedBus.currentStops);
+        } else {
+          stopMarkers.forEach(marker => marker.setMap(null));
+          stopMarkers = [];
+        }
+      }
+
+      // Draw stops on map
+      function drawStops(stops) {
+        stopMarkers.forEach(marker => marker.setMap(null));
+        stopMarkers = [];
+
+        stops.forEach((stop, index) => {
+          if (stop.stop?.latitude && stop.stop?.longitude) {
+            const marker = new google.maps.Marker({
+              position: {
+                lat: Number(stop.stop.latitude),
+                lng: Number(stop.stop.longitude)
+              },
+              map: map,
+              icon: {
+                url: `data:image/svg+xml;utf8,${encodeURIComponent(`
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="14" cy="14" r="10" fill="#2970FF" stroke="white" stroke-width="3"/>
+                    <text x="14" y="18" text-anchor="middle" fill="white" font-size="9" font-weight="bold">${index + 1}</text>
+                  </svg>
+                `)}`,
+                scaledSize: new google.maps.Size(28, 28)
+              },
+              title: stop.stopName
+            });
+            
+            marker.addListener('click', () => {
+              map.panTo(marker.getPosition());
+              map.setZoom(16);
+            });
+            
+            stopMarkers.push(marker);
+          }
+        });
+      }
+
+      // Draw route on map (only line)
+      function drawRouteOnMap(route) {
+        if (currentPolyline) currentPolyline.setMap(null);
+        stopMarkers.forEach(marker => marker.setMap(null));
+        stopMarkers = [];
+
+        if (!route || !route.flowCoordinates || route.flowCoordinates.length === 0) {
+          return;
+        }
+
+        const path = route.flowCoordinates.map(coord => ({
+          lat: coord.lat,
+          lng: coord.lng
+        }));
+
+        currentPolyline = new google.maps.Polyline({
+          path: path,
+          geodesic: true,
+          strokeColor: '#1570EF',
+          strokeOpacity: 0.8,
+          strokeWeight: 5
+        });
+        currentPolyline.setMap(map);
+
+        const bounds = new google.maps.LatLngBounds();
+        path.forEach(point => bounds.extend(point));
+        map.fitBounds(bounds);
+      }
+
+      function goToStop(stop) {
+        if (stop.stop?.latitude && stop.stop?.longitude) {
+          map.panTo({
+            lat: Number(stop.stop.latitude),
+            lng: Number(stop.stop.longitude)
+          });
+          map.setZoom(16);
+        }
+      }
+
+      function renderBusList() {
+        const filteredBuses = searchTerm 
+          ? busList.filter(bus => bus.number.includes(searchTerm))
+          : busList;
+
+        busGrid.innerHTML = filteredBuses.map(bus => `
+          <button 
+            class="bus-button ${selectedBus && selectedBus.id === bus.id ? 'selected' : ''}"
+            onclick="selectBus(${bus.id})"
+          >
+            ${bus.number}
+          </button>
+        `).join('');
+      }
+
+      window.selectBus = function(busId) {
+        fetchBusDetails(busId);
+      };
+
+      window.changeDirection = function(newDirection) {
+        direction = newDirection;
+        if (selectedBus) {
+          const route = selectedBus.routes?.find(
+            r => r.directionTypeId === (direction === 'FORWARD' ? 1 : 2)
+          );
+          
+          const filteredStops = selectedBus.stops?.filter(
+            stop => stop.directionTypeId === (direction === 'FORWARD' ? 1 : 2)
+          ) || [];
+          
+          selectedBus.currentRoute = route;
+          selectedBus.currentStops = filteredStops;
+          
+          renderBusDetails();
+          drawRouteOnMap(route);
+          
+          if (showStops) {
+            drawStops(filteredStops);
+          }
+        }
+      };
+
+      window.goToStop = function(stop) {
+        if (stop.stop?.latitude && stop.stop?.longitude) {
+          map.panTo({
+            lat: Number(stop.stop.latitude),
+            lng: Number(stop.stop.longitude)
+          });
+          map.setZoom(16);
+        }
+      };
+
+      window.toggleStops = toggleStops;
+
+      function renderBusDetails() {
+        if (!selectedBus) return;
+
+        const bus = selectedBus;
+        const stops = bus.currentStops || [];
+        
+        const stopsHtml = stops.map((stop, index) => `
+          <div class="stop-item" onclick='goToStop(${JSON.stringify(stop).replace(/'/g, "&apos;")})'>
+            <div class="stop-line">
+              <div class="stop-line-vertical"></div>
+              <div class="stop-dot"></div>
+            </div>
+            <div class="stop-info">
+              <div class="stop-name">${stop.stopName || `Stop #${index + 1}`}</div>
+            </div>
+          </div>
+        `).join('');
+
+        infoPanel.innerHTML = `
+          <div class="info-header">
+            <h3>№ ${bus.number || ''}</h3>
+            <div class="direction-buttons">
+              <button 
+                class="direction-btn ${direction === 'FORWARD' ? 'active' : ''}"
+                onclick="changeDirection('FORWARD')"
+              >→</button>
+              <button 
+                class="direction-btn ${direction === 'BACKWARD' ? 'active' : ''}"
+                onclick="changeDirection('BACKWARD')"
+              >←</button>
+            </div>
+          </div>
+
+          <div class="info-stats">
+            <div class="stat-item">
+              <div class="stat-label">Duration</div>
+              <div class="stat-value">${bus.durationMinuts || 0} min</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Stops</div>
+              <div class="stat-value">${stops.length}</div>
+            </div>
+          </div>
+
+          <div class="route-path">
+            <span class="route-number">${bus.number || ''}</span>
+            <div class="route-points">
+              <span>${bus.firstPoint || 'Start'}</span>
+              <span>→</span>
+              <span>${bus.lastPoint || 'End'}</span>
+            </div>
+          </div>
+
+          <div class="details-list">
+            <div class="detail-item">
+              <span class="detail-label">Carrier</span>
+              <span class="detail-value">${bus.carrier || '—'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Region</span>
+              <span class="detail-value">${bus.region?.name || '—'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Tariff</span>
+              <span class="detail-value">${bus.tariffStr || '0'} AZN</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Length</span>
+              <span class="detail-value">${bus.routLength || 0} km</span>
+            </div>
+          </div>
+
+          <div class="stops-header">
+            <span class="stops-title">Stops (${stops.length})</span>
+            <button class="show-stops-btn" id="toggleStopsBtn" onclick="toggleStops()">
+              Show
+            </button>
+          </div>
+          <div class="stops-list ${showStops ? 'show' : ''}" id="stopsList">
+            ${stopsHtml}
+          </div>
+        `;
+
+        if (showStops) {
+          document.getElementById('toggleStopsBtn').textContent = 'Hide';
+          document.getElementById('stopsList').classList.add('show');
+        }
+      }
+
+      // When page loads
+      window.onload = () => {
+        initMap();
+        fetchBusList();
+      };
+    </script>
+  </body>
+</html>
