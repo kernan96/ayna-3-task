@@ -9,8 +9,36 @@
     <meta content="" name="description" />
     <meta content="" name="keywords" />
     <!-- Favicons -->
-    <link href="files/favicon.png" rel="icon" />
-    <link href="files/apple-touch-icon.png" rel="apple-touch-icon" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="https://ayna.gov.az/assets/ui/favicon/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="https://ayna.gov.az/assets/ui/favicon/android-chrome-512x512.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="https://ayna.gov.az/assets/ui/favicon/android-chrome-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="https://ayna.gov.az/assets/ui/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="https://ayna.gov.az/assets/ui/favicon/favicon-16x16.png"
+    />
+   
     <!-- Google Fonts -->
     <link href="https://fonts.gstatic.com/" rel="preconnect" />
     <link href="files/css.css" rel="stylesheet" />
@@ -102,8 +130,6 @@
         </a>
         <i class="bi bi-list toggle-sidebar-btn"></i>
       </div>
-
-      
     </header>
     <!-- End Header -->
 
@@ -137,26 +163,28 @@
     <main class="main" id="main">
       <h5 class="mb-2">Select Region & Data Type:</h5>
 
-     <div class="d-flex align-items-center gap-2 flex-wrap bg-light p-2 rounded">
-  <!-- Region Type Group -->
-  <div class="d-flex align-items-center gap-1">
-    <span class="fw-semibold">Region Type:</span>
-    <select id="regionFilter" class="form-select form-select-sm w-auto">
-      <option value="micro">Micro</option>
-      <option value="meso">Meso</option>
-      <option value="macro">Macro</option>
-    </select>
-  </div>
+      <div
+        class="d-flex align-items-center gap-2 flex-wrap bg-light p-2 rounded"
+      >
+        <!-- Region Type Group -->
+        <div class="d-flex align-items-center gap-1">
+          <span class="fw-semibold">Region Type:</span>
+          <select id="regionFilter" class="form-select form-select-sm w-auto">
+            <option value="micro">Micro</option>
+            <option value="meso">Meso</option>
+            <option value="macro">Macro</option>
+          </select>
+        </div>
 
-  <!-- Data Type Group -->
-  <div class="d-flex align-items-center gap-1">
-    <span class="fw-semibold">Data Type:</span>
-    <select id="dataType" class="form-select form-select-sm w-auto">
-      <option value="population">Population</option>
-      <option value="tot_jobs">Jobs</option>
-    </select>
-  </div>
-</div>
+        <!-- Data Type Group -->
+        <div class="d-flex align-items-center gap-1">
+          <span class="fw-semibold">Data Type:</span>
+          <select id="dataType" class="form-select form-select-sm w-auto">
+            <option value="population">Population</option>
+            <option value="tot_jobs">Jobs</option>
+          </select>
+        </div>
+      </div>
 
       <div class="map-wrapper">
         <div id="map"></div>
