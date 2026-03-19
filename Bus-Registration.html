@@ -45,7 +45,7 @@
     }
 
     /* Table container for horizontal scroll on mobile */
-    .table-responsive {
+    .table-responsive-custom {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       margin: 0;
@@ -56,15 +56,17 @@
 
     /* Ensure table doesn't break on mobile */
     @media (max-width: 768px) {
-      .table-responsive {
+      .table-responsive-custom {
         border: 1px solid #dee2e6;
         border-radius: 8px;
+        margin-top: 15px;
       }
 
       #myTable {
-        min-width: 800px;
-        /* Ensures table doesn't shrink too much */
+        min-width: 900px;
+        /* Ensures table doesn't shrink too much - increased for more columns */
         margin-bottom: 0;
+        width: 100%;
       }
 
       #myTable th,
@@ -104,6 +106,25 @@
       .tab-content {
         padding: 10px 0 !important;
       }
+      
+      /* Fix for DataTable search and length menu on mobile */
+      .dataTables_wrapper .dataTables_length,
+      .dataTables_wrapper .dataTables_filter {
+        float: none;
+        text-align: left;
+        margin-bottom: 10px;
+      }
+      
+      .dataTables_wrapper .dataTables_filter input {
+        width: 100% !important;
+        margin-left: 0 !important;
+        display: block;
+      }
+      
+      .dataTables_wrapper .dataTables_length select {
+        display: inline-block;
+        width: auto;
+      }
     }
 
     /* Very small devices */
@@ -123,6 +144,11 @@
         width: 100% !important;
         margin-left: 0 !important;
       }
+      
+      #myTable {
+        min-width: 850px;
+        /* Slightly smaller for very small devices but still scrollable */
+      }
     }
 
     /* Chart containers responsiveness */
@@ -134,7 +160,8 @@
 
     #deptBar,
     #donutChart,
-    #hourlyLineChart {
+    #hourlyLineChart,
+    #pieChart {
       min-height: 350px;
       width: 100% !important;
     }
@@ -143,7 +170,8 @@
 
       #deptBar,
       #donutChart,
-      #hourlyLineChart {
+      #hourlyLineChart,
+      #pieChart {
         min-height: 300px;
       }
     }
@@ -157,6 +185,23 @@
 
     #legendline span {
       font-size: 11px !important;
+    }
+    
+    /* Fix for tab buttons on mobile */
+    .nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    
+    .nav-tabs .nav-item {
+      flex: 1 1 auto;
+      text-align: center;
+    }
+    
+    .nav-tabs .nav-link {
+      width: 100%;
+      padding: 10px 5px;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -211,533 +256,526 @@
               <!-- Tabs -->
               <ul class="nav nav-tabs" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                  <button aria-controls="table" aria-selected="true" class="nav-link active" data-bs-target="#table"
-                    data-bs-toggle="tab" id="table-tab" role="tab" type="button">
+                  <button aria-controls="charts" aria-selected="true" class="nav-link active" data-bs-target="#charts"
+                    data-bs-toggle="tab" id="charts-tab" role="tab" type="button">
                     Charts
                   </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                  <button aria-controls="charts" aria-selected="false" class="nav-link" data-bs-target="#charts"
-                    data-bs-toggle="tab" id="charts-tab" role="tab" tabindex="-1" type="button">
+                  <button aria-controls="table" aria-selected="false" class="nav-link" data-bs-target="#table"
+                    data-bs-toggle="tab" id="table-tab" role="tab" tabindex="-1" type="button">
                     Table
                   </button>
                 </li>
               </ul>
 
               <div class="tab-content pt-2" id="myTabContent">
-                <!-- Table Tab -->
-                <div aria-labelledby="table-tab" class="tab-pane fade show active" id="table" role="tabpanel">
-                  <!-- Table with horizontal scroll container -->
-                  <div class="table-responsive">
-                    <div class="row">
-                      <div class="col-lg-6">
-                        <div class="card">
-                          <div class="card-body">
-                            <h5 class="card-title">
-                              Number of Passengers by Operator
-                            </h5>
+                <!-- Charts Tab (Active) -->
+                <div aria-labelledby="charts-tab" class="tab-pane fade show active" id="charts" role="tabpanel">
+                  <div class="row">
+                    <!-- Number of Passengers by Operator Chart -->
+                    <div class="col-lg-6">
+                      <div class="card">
+                        <div class="card-body">
+                          <h5 class="card-title">Number of Passengers by Operator</h5>
+                          <div class="echart" id="donutChart" style="
+                                min-height: 400px;
+                                width: 100%;
+                                user-select: none;
+                                position: relative;
+                              "></div>
 
-                            <div class="echart" id="donutChart" style="
-                                  min-height: 400px;
-                                  width: 100%;
-                                  user-select: none;
-                                  position: relative;
-                                "></div>
+                          <script>
+                            document.addEventListener(
+                              "DOMContentLoaded",
+                              async () => {
+                                const a = 1;
 
-                            <script>
-                              document.addEventListener(
-                                "DOMContentLoaded",
-                                async () => {
-                                  const a = 1;
-
-                                  let text = await fetch(
-                                    "files/ceck_in_buss.csv",
-                                  ).then((r) => r.text());
-                                  let rows = text.trim().split("\n");
-
-                                  let headers = rows.shift().split(",");
-                                  const operatorIndex = headers.indexOf("Operator");
-                                  const totalIndex = headers.indexOf("Total Count");
-
-                                  let data = rows.map((r) => r.split(","));
-
-                                  let operatorMap = {};
-                                  data.forEach((row) => {
-                                    const op = row[operatorIndex];
-                                    const val = parseInt(row[totalIndex]) || 0;
-                                    if (!operatorMap[op]) operatorMap[op] = 0;
-                                    operatorMap[op] += val;
-                                  });
-
-                                  const colorPalette = [
-                                    `rgba(34,197,94,${a})`,
-                                    `rgba(245,158,11,${a})`,
-                                    `rgba(59,130,246,${a})`,
-                                    `rgba(239,68,68,${a})`,
-                                    `rgba(128,0,128,${a})`,
-                                    `rgba(0,128,128,${a})`,
-                                    `rgba(255,105,180,${a})`,
-                                    `rgba(255,165,0,${a})`,
-                                    `rgba(0,191,255,${a})`,
-                                    `rgba(75,0,130,${a})`,
-                                  ];
-
-                                  const operators = Object.keys(
-                                    operatorMap,
-                                  ).slice(0, 10);
-                                  const pieData = operators.map((op, i) => ({
-                                    name: op,
-                                    value: operatorMap[op],
-                                    itemStyle: {
-                                      color:
-                                        colorPalette[i % colorPalette.length],
-                                    },
-                                  }));
-
-                                  const chart = echarts.init(
-                                    document.querySelector("#donutChart"),
-                                  );
-
-                                  chart.setOption({
-                                    animation: true,
-                                    animationDuration: 500,
-                                    animationEasing: "cubicOut",
-                                    tooltip: {
-                                      trigger: "item",
-                                      formatter: (p) =>
-                                        `${p.marker}${p.name}: <b>${p.value}</b> (${p.percent}%)`,
-                                    },
-                                    legend: {
-                                      top: "5%",
-                                      left: "center",
-                                      data: operators,
-                                      selected: operators.reduce(
-                                        (acc, n) => ((acc[n] = true), acc),
-                                        {},
-                                      ),
-                                      formatter: () => "",
-                                      itemWidth: 20,
-                                      itemHeight: 20,
-                                      textStyle: { color: "transparent" },
-                                    },
-                                    series: [
-                                      {
-                                        name: "Operators",
-                                        type: "pie",
-                                        radius: ["40%", "70%"],
-                                        avoidLabelOverlap: false,
-                                        label: {
-                                          show: false,
-                                          position: "center",
-                                        },
-                                        emphasis: {
-                                          label: {
-                                            show: true,
-                                            fontSize: 18,
-                                            fontWeight: "bold",
-                                          },
-                                        },
-                                        labelLine: { show: false },
-                                        data: pieData,
-                                      },
-                                    ],
-                                  });
-
-                                  window.addEventListener("resize", () =>
-                                    chart.resize(),
-                                  );
-                                },
-                              );
-                            </script>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="col-lg-6">
-                        <div class="card">
-                          <div class="card-body">
-                            <h5 class="card-title">Kind of Payments</h5>
-                            <div class="echart" id="pieChart"
-                              style="min-height: 400px; user-select: none; position: relative;"></div>
-
-                            <script>
-                              document.addEventListener("DOMContentLoaded", async () => {
-                                const a = 1; // opacity
-
-                                // CSV faylını oxuyuruq
-                                let text = await fetch("files/ceck_in_buss.csv").then(r => r.text());
+                                let text = await fetch(
+                                  "files/ceck_in_buss.csv",
+                                ).then((r) => r.text());
                                 let rows = text.trim().split("\n");
+
                                 let headers = rows.shift().split(",");
+                                const operatorIndex = headers.indexOf("Operator");
+                                const totalIndex = headers.indexOf("Total Count");
 
-                                // Sütun indexləri
-                                const smartCardIndex = headers.findIndex(h => h.trim() === "By SmartCard");
-                                const qrIndex = headers.findIndex(h => h.trim() === "By QR");
+                                let data = rows.map((r) => r.split(","));
 
-                                let totalSmartCard = 0;
-                                let totalQr = 0;
-
-                                rows.forEach(r => {
-                                  const cols = r.split(",");
-                                  totalSmartCard += parseInt(cols[smartCardIndex]?.trim() || 0);
-                                  totalQr += parseInt(cols[qrIndex]?.trim() || 0);
+                                let operatorMap = {};
+                                data.forEach((row) => {
+                                  const op = row[operatorIndex];
+                                  const val = parseInt(row[totalIndex]) || 0;
+                                  if (!operatorMap[op]) operatorMap[op] = 0;
+                                  operatorMap[op] += val;
                                 });
 
-                                const pieData = [
-                                  { value: totalSmartCard, name: "By SmartCard", itemStyle: { color: `rgba(34, 197, 94, ${a})` } },
-                                  { value: totalQr, name: "By QR", itemStyle: { color: `rgba(59, 130, 246, ${a})` } }
+                                const colorPalette = [
+                                  `rgba(34,197,94,${a})`,
+                                  `rgba(245,158,11,${a})`,
+                                  `rgba(59,130,246,${a})`,
+                                  `rgba(239,68,68,${a})`,
+                                  `rgba(128,0,128,${a})`,
+                                  `rgba(0,128,128,${a})`,
+                                  `rgba(255,105,180,${a})`,
+                                  `rgba(255,165,0,${a})`,
+                                  `rgba(0,191,255,${a})`,
+                                  `rgba(75,0,130,${a})`,
                                 ];
 
-                                const chart = echarts.init(document.querySelector("#pieChart"));
-
-                                const option = {
-                                  title: {
-                                    text: '',
-                                    left: 'center',
-                                    top: 10,
-                                    textStyle: { fontSize: 16 },
-                                    subtextStyle: { fontSize: 14 }
+                                const operators = Object.keys(
+                                  operatorMap,
+                                ).slice(0, 10);
+                                const pieData = operators.map((op, i) => ({
+                                  name: op,
+                                  value: operatorMap[op],
+                                  itemStyle: {
+                                    color:
+                                      colorPalette[i % colorPalette.length],
                                   },
+                                }));
+
+                                const chart = echarts.init(
+                                  document.querySelector("#donutChart"),
+                                );
+
+                                chart.setOption({
+                                  animation: true,
+                                  animationDuration: 500,
+                                  animationEasing: "cubicOut",
                                   tooltip: {
-                                    trigger: 'item',
-                                    formatter: (p) => `${p.name}: ${p.value} (${p.percent}%)`
+                                    trigger: "item",
+                                    formatter: (p) =>
+                                      `${p.marker}${p.name}: <b>${p.value}</b> (${p.percent}%)`,
                                   },
                                   legend: {
-                                    orient: 'vertical',
-                                    left: 'left',
-                                    textStyle: { fontSize: 14 }
+                                    top: "5%",
+                                    left: "center",
+                                    data: operators,
+                                    selected: operators.reduce(
+                                      (acc, n) => ((acc[n] = true), acc),
+                                      {},
+                                    ),
+                                    formatter: () => "",
+                                    itemWidth: 20,
+                                    itemHeight: 20,
+                                    textStyle: { color: "transparent" },
                                   },
-                                  series: [{
-                                    name: 'Ödəniş Növləri',
-                                    type: 'pie',
-                                    radius: '50%',
-                                    data: pieData,
-                                    emphasis: {
-                                      itemStyle: {
-                                        shadowBlur: 15,
-                                        shadowOffsetX: 0,
-                                        shadowColor: 'rgba(0,0,0,0.4)'
-                                      }
+                                  series: [
+                                    {
+                                      name: "Operators",
+                                      type: "pie",
+                                      radius: ["40%", "70%"],
+                                      avoidLabelOverlap: false,
+                                      label: {
+                                        show: false,
+                                        position: "center",
+                                      },
+                                      emphasis: {
+                                        label: {
+                                          show: true,
+                                          fontSize: 18,
+                                          fontWeight: "bold",
+                                        },
+                                      },
+                                      labelLine: { show: false },
+                                      data: pieData,
                                     },
-                                    label: {
-                                      fontSize: 14,
-                                      formatter: '{b}: {c} ({d}%)'
-                                    }
-                                  }]
-                                };
+                                  ],
+                                });
 
-                                chart.setOption(option);
+                                window.addEventListener("resize", () =>
+                                  chart.resize(),
+                                );
+                              },
+                            );
+                          </script>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Kind of Payments Chart -->
+                    <div class="col-lg-6">
+                      <div class="card">
+                        <div class="card-body">
+                          <h5 class="card-title">Kind of Payments</h5>
+                          <div class="echart" id="pieChart"
+                            style="min-height: 400px; user-select: none; position: relative;"></div>
 
-                                // Responsive
-                                window.addEventListener('resize', () => chart.resize());
+                          <script>
+                            document.addEventListener("DOMContentLoaded", async () => {
+                              const a = 1; // opacity
+
+                              // CSV faylını oxuyuruq
+                              let text = await fetch("files/ceck_in_buss.csv").then(r => r.text());
+                              let rows = text.trim().split("\n");
+                              let headers = rows.shift().split(",");
+
+                              // Sütun indexləri
+                              const smartCardIndex = headers.findIndex(h => h.trim() === "By SmartCard");
+                              const qrIndex = headers.findIndex(h => h.trim() === "By QR");
+
+                              let totalSmartCard = 0;
+                              let totalQr = 0;
+
+                              rows.forEach(r => {
+                                const cols = r.split(",");
+                                totalSmartCard += parseInt(cols[smartCardIndex]?.trim() || 0);
+                                totalQr += parseInt(cols[qrIndex]?.trim() || 0);
                               });
-                            </script>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- Passengers per Hour Chart -->
-                      <div class="col-lg-12">
-                        <div class="card">
-                          <div class="card-body">
-                            <h5 class="card-title">Passengers per Hour</h5>
-                            <div class="echart" id="deptBar" style="min-height: 400px; width: 100%;"></div>
 
-                            <script>
-                              document.addEventListener(
-                                "DOMContentLoaded",
-                                async () => {
-                                  const chart = echarts.init(
-                                    document.querySelector("#deptBar"),
-                                  );
+                              const pieData = [
+                                { value: totalSmartCard, name: "By SmartCard", itemStyle: { color: `rgba(34, 197, 94, ${a})` } },
+                                { value: totalQr, name: "By QR", itemStyle: { color: `rgba(59, 130, 246, ${a})` } }
+                              ];
 
-                                  let text = await fetch(
-                                    "files/ceck_in_buss.csv",
-                                  ).then((r) => r.text());
-                                  let rows = text.trim().split("\n");
+                              const chart = echarts.init(document.querySelector("#pieChart"));
 
-                                  let headers = rows.shift().split(",");
-                                  const hourIndex = headers.indexOf("Hour");
-                                  const operatorIndex = headers.indexOf("Operator");
-                                  const totalIndex = headers.indexOf("Total Count");
-
-                                  let data = rows.map((r) => r.split(","));
-
-                                  let operators = [
-                                    ...new Set(
-                                      data.map((r) => r[operatorIndex]),
-                                    ),
-                                  ];
-
-                                  let hours = Array.from(
-                                    { length: 24 },
-                                    (_, i) => i.toString(),
-                                  );
-
-                                  let result = {};
-
-                                  operators.forEach((op) => {
-                                    result[op] = Array(24).fill(0);
-                                  });
-
-                                  data.forEach((row) => {
-                                    let hour = parseInt(row[hourIndex]);
-                                    let op = row[operatorIndex];
-                                    let val = parseInt(row[totalIndex]) || 0;
-
-                                    if (!isNaN(hour) && result[op]) {
-                                      result[op][hour] += val;
-                                    }
-                                  });
-
-                                  operators = operators.slice(0, 10);
-
-                                  function getColor() {
-                                    return `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.9)`;
-                                  }
-
-                                  let series = operators.map((op) => ({
-                                    name: op,
-                                    type: "bar",
-                                    stack: "total",
-                                    data: result[op],
-                                    itemStyle: { color: getColor() },
-                                  }));
-
-                                  chart.setOption({
-                                    tooltip: { trigger: "axis" },
-                                    legend: {
-                                      display: true,
-                                      labels: {
-                                        generateLabels: function (chart) {
-                                          return Chart.defaults.plugins.legend.labels
-                                            .generateLabels(chart)
-                                            .map((l) => {
-                                              l.text = "";
-                                              return l;
-                                            });
-                                        },
-                                        boxWidth: 20,
-                                        usePointStyle: true,
-                                      },
-                                    },
-                                    xAxis: {
-                                      type: "category",
-                                      data: hours,
-                                      name: "Hour",
-                                    },
-                                    yAxis: {
-                                      type: "value",
-                                      name: "Total Count",
-                                    },
-                                    series: series,
-                                  });
-
-                                  window.addEventListener("resize", () =>
-                                    chart.resize(),
-                                  );
+                              const option = {
+                                title: {
+                                  text: '',
+                                  left: 'center',
+                                  top: 10,
+                                  textStyle: { fontSize: 16 },
+                                  subtextStyle: { fontSize: 14 }
                                 },
-                              );
-                            </script>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Passengers per hour for each operator -->
-                      <div class="col-lg-12">
-                        <div class="card">
-                          <div class="card-body">
-                            <h5 class="card-title">
-                              Passengers per Hour for Each Operator
-                            </h5>
-
-                            <div id="legendline" style="
-                                  display: flex;
-                                  justify-content: center;
-                                  gap: 14px;
-                                  align-items: center;
-                                  flex-wrap: wrap;
-                                  font-size: 12px;
-                                  margin: 0 0 15px 0;
-                                "></div>
-
-                            <canvas id="hourlyLineChart" style="
-                                  max-height: 400px;
-                                  width: 100%;
-                                  height: 400px;
-                                "></canvas>
-
-                            <script>
-                              document.addEventListener(
-                                "DOMContentLoaded",
-                                async () => {
-                                  const a = 0.9;
-                                  const canvas =
-                                    document.querySelector("#hourlyLineChart");
-                                  const legendEl =
-                                    document.getElementById("legendline");
-
-                                  let text = await fetch(
-                                    "files/ceck_in_buss.csv",
-                                  ).then((r) => r.text());
-                                  let rows = text.trim().split("\n");
-
-                                  let headers = rows.shift().split(",");
-                                  const hourIndex = headers.indexOf("Hour");
-                                  const operatorIndex = headers.indexOf("Operator");
-                                  const totalIndex = headers.indexOf("Total Count");
-
-                                  let data = rows.map((r) => r.split(","));
-
-                                  let operators = [
-                                    ...new Set(
-                                      data.map((r) => r[operatorIndex]),
-                                    ),
-                                  ].slice(0, 10);
-
-                                  let hours = Array.from(
-                                    { length: 24 },
-                                    (_, i) => i,
-                                  );
-
-                                  let result = {};
-                                  operators.forEach((op) => {
-                                    result[op] = Array(24).fill(0);
-                                  });
-
-                                  data.forEach((row) => {
-                                    let op = row[operatorIndex];
-                                    let h = parseInt(row[hourIndex]);
-                                    let val = parseInt(row[totalIndex]) || 0;
-                                    if (
-                                      result[op] &&
-                                      !isNaN(h) &&
-                                      h >= 0 &&
-                                      h < 24
-                                    ) {
-                                      result[op][h] += val;
-                                    }
-                                  });
-
-                                  function getColor() {
-                                    return `rgba(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${a})`;
-                                  }
-
-                                  let datasets = operators.map((op) => ({
-                                    label: op,
-                                    data: result[op],
-                                    fill: false,
-                                    borderColor: getColor(),
-                                    pointBackgroundColor: getColor(),
-                                    tension: 0,
-                                    pointRadius: 3,
-                                  }));
-
-                                  operators.forEach((op, idx) => {
-                                    let span = document.createElement("span");
-                                    span.setAttribute("data-short", op);
-                                    span.style =
-                                      "display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin:2px;padding:2px 4px;border-radius:4px;";
-                                    let i = document.createElement("i");
-                                    i.style = `width:12px;height:12px;display:inline-block;border-radius:2px;background:${datasets[idx].borderColor}`;
-                                    span.appendChild(i);
-                                    span.appendChild(
-                                      document.createTextNode(op),
-                                    );
-                                    span.setAttribute("data-hidden", "false");
-                                    legendEl.appendChild(span);
-
-                                    span.addEventListener("click", () => {
-                                      const hidden =
-                                        span.getAttribute("data-hidden") ===
-                                        "true";
-                                      span.setAttribute(
-                                        "data-hidden",
-                                        String(!hidden),
-                                      );
-                                      i.style.opacity = !hidden ? "0.35" : "1";
-                                      span.style.color = !hidden
-                                        ? "rgba(0,0,0,0.55)"
-                                        : "";
-
-                                      chart.data.datasets[idx].hidden = !hidden;
-                                      chart.update();
-                                    });
-                                  });
-
-                                  const chart = new Chart(canvas, {
-                                    type: "line",
-                                    data: { labels: hours, datasets: datasets },
-                                    options: {
-                                      responsive: true,
-                                      maintainAspectRatio: false,
-                                      interaction: {
-                                        mode: "nearest",
-                                        intersect: false,
-                                      },
-                                      plugins: {
-                                        legend: { display: false },
-                                        tooltip: {
-                                          callbacks: {
-                                            label: (ctx) =>
-                                              `${ctx.dataset.label}: ${ctx.parsed.y}`,
-                                          },
-                                        },
-                                      },
-                                      scales: {
-                                        y: { beginAtZero: true },
-                                        x: {
-                                          title: {
-                                            display: true,
-                                            text: "Hour",
-                                          },
-                                        },
-                                      },
-                                    },
-                                  });
-
-                                  window.chart = chart;
-                                  window.addEventListener("resize", () =>
-                                    chart.resize(),
-                                  );
+                                tooltip: {
+                                  trigger: 'item',
+                                  formatter: (p) => `${p.name}: ${p.value} (${p.percent}%)`
                                 },
-                              );
-                            </script>
-                          </div>
+                                legend: {
+                                  orient: 'vertical',
+                                  left: 'left',
+                                  textStyle: { fontSize: 14 }
+                                },
+                                series: [{
+                                  name: 'Ödəniş Növləri',
+                                  type: 'pie',
+                                  radius: '50%',
+                                  data: pieData,
+                                  emphasis: {
+                                    itemStyle: {
+                                      shadowBlur: 15,
+                                      shadowOffsetX: 0,
+                                      shadowColor: 'rgba(0,0,0,0.4)'
+                                    }
+                                  },
+                                  label: {
+                                    fontSize: 14,
+                                    formatter: '{b}: {c} ({d}%)'
+                                  }
+                                }]
+                              };
+
+                              chart.setOption(option);
+
+                              // Responsive
+                              window.addEventListener('resize', () => chart.resize());
+                            });
+                          </script>
                         </div>
                       </div>
+                    </div>
+                    
+                    <!-- Passengers per Hour Chart -->
+                    <div class="col-lg-12">
+                      <div class="card">
+                        <div class="card-body">
+                          <h5 class="card-title">Passengers per Hour</h5>
+                          <div class="echart" id="deptBar" style="min-height: 400px; width: 100%;"></div>
 
-                      <!-- Passengers by Operator (Donut Chart) -->
+                          <script>
+                            document.addEventListener(
+                              "DOMContentLoaded",
+                              async () => {
+                                const chart = echarts.init(
+                                  document.querySelector("#deptBar"),
+                                );
 
+                                let text = await fetch(
+                                  "files/ceck_in_buss.csv",
+                                ).then((r) => r.text());
+                                let rows = text.trim().split("\n");
+
+                                let headers = rows.shift().split(",");
+                                const hourIndex = headers.indexOf("Hour");
+                                const operatorIndex = headers.indexOf("Operator");
+                                const totalIndex = headers.indexOf("Total Count");
+
+                                let data = rows.map((r) => r.split(","));
+
+                                let operators = [
+                                  ...new Set(
+                                    data.map((r) => r[operatorIndex]),
+                                  ),
+                                ];
+
+                                let hours = Array.from(
+                                  { length: 24 },
+                                  (_, i) => i.toString(),
+                                );
+
+                                let result = {};
+
+                                operators.forEach((op) => {
+                                  result[op] = Array(24).fill(0);
+                                });
+
+                                data.forEach((row) => {
+                                  let hour = parseInt(row[hourIndex]);
+                                  let op = row[operatorIndex];
+                                  let val = parseInt(row[totalIndex]) || 0;
+
+                                  if (!isNaN(hour) && result[op]) {
+                                    result[op][hour] += val;
+                                  }
+                                });
+
+                                operators = operators.slice(0, 10);
+
+                                function getColor() {
+                                  return `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.9)`;
+                                }
+
+                                let series = operators.map((op) => ({
+                                  name: op,
+                                  type: "bar",
+                                  stack: "total",
+                                  data: result[op],
+                                  itemStyle: { color: getColor() },
+                                }));
+
+                                chart.setOption({
+                                  tooltip: { trigger: "axis" },
+                                  legend: {
+                                    display: true,
+                                    labels: {
+                                      generateLabels: function (chart) {
+                                        return Chart.defaults.plugins.legend.labels
+                                          .generateLabels(chart)
+                                          .map((l) => {
+                                            l.text = "";
+                                            return l;
+                                          });
+                                      },
+                                      boxWidth: 20,
+                                      usePointStyle: true,
+                                    },
+                                  },
+                                  xAxis: {
+                                    type: "category",
+                                    data: hours,
+                                    name: "Hour",
+                                  },
+                                  yAxis: {
+                                    type: "value",
+                                    name: "Total Count",
+                                  },
+                                  series: series,
+                                });
+
+                                window.addEventListener("resize", () =>
+                                  chart.resize(),
+                                );
+                              },
+                            );
+                          </script>
+                        </div>
+                      </div>
                     </div>
 
+                    <!-- Passengers per hour for each operator -->
+                    <div class="col-lg-12">
+                      <div class="card">
+                        <div class="card-body">
+                          <h5 class="card-title">
+                            Passengers per Hour for Each Operator
+                          </h5>
+
+                          <div id="legendline" style="
+                                display: flex;
+                                justify-content: center;
+                                gap: 14px;
+                                align-items: center;
+                                flex-wrap: wrap;
+                                font-size: 12px;
+                                margin: 0 0 15px 0;
+                              "></div>
+
+                          <canvas id="hourlyLineChart" style="
+                                max-height: 400px;
+                                width: 100%;
+                                height: 400px;
+                              "></canvas>
+
+                          <script>
+                            document.addEventListener(
+                              "DOMContentLoaded",
+                              async () => {
+                                const a = 0.9;
+                                const canvas =
+                                  document.querySelector("#hourlyLineChart");
+                                const legendEl =
+                                  document.getElementById("legendline");
+
+                                let text = await fetch(
+                                  "files/ceck_in_buss.csv",
+                                ).then((r) => r.text());
+                                let rows = text.trim().split("\n");
+
+                                let headers = rows.shift().split(",");
+                                const hourIndex = headers.indexOf("Hour");
+                                const operatorIndex = headers.indexOf("Operator");
+                                const totalIndex = headers.indexOf("Total Count");
+
+                                let data = rows.map((r) => r.split(","));
+
+                                let operators = [
+                                  ...new Set(
+                                    data.map((r) => r[operatorIndex]),
+                                  ),
+                                ].slice(0, 10);
+
+                                let hours = Array.from(
+                                  { length: 24 },
+                                  (_, i) => i,
+                                );
+
+                                let result = {};
+                                operators.forEach((op) => {
+                                  result[op] = Array(24).fill(0);
+                                });
+
+                                data.forEach((row) => {
+                                  let op = row[operatorIndex];
+                                  let h = parseInt(row[hourIndex]);
+                                  let val = parseInt(row[totalIndex]) || 0;
+                                  if (
+                                    result[op] &&
+                                    !isNaN(h) &&
+                                    h >= 0 &&
+                                    h < 24
+                                  ) {
+                                    result[op][h] += val;
+                                  }
+                                });
+
+                                function getColor() {
+                                  return `rgba(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${a})`;
+                                }
+
+                                let datasets = operators.map((op) => ({
+                                  label: op,
+                                  data: result[op],
+                                  fill: false,
+                                  borderColor: getColor(),
+                                  pointBackgroundColor: getColor(),
+                                  tension: 0,
+                                  pointRadius: 3,
+                                }));
+
+                                operators.forEach((op, idx) => {
+                                  let span = document.createElement("span");
+                                  span.setAttribute("data-short", op);
+                                  span.style =
+                                    "display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin:2px;padding:2px 4px;border-radius:4px;";
+                                  let i = document.createElement("i");
+                                  i.style = `width:12px;height:12px;display:inline-block;border-radius:2px;background:${datasets[idx].borderColor}`;
+                                  span.appendChild(i);
+                                  span.appendChild(
+                                    document.createTextNode(op),
+                                  );
+                                  span.setAttribute("data-hidden", "false");
+                                  legendEl.appendChild(span);
+
+                                  span.addEventListener("click", () => {
+                                    const hidden =
+                                      span.getAttribute("data-hidden") ===
+                                      "true";
+                                    span.setAttribute(
+                                      "data-hidden",
+                                      String(!hidden),
+                                    );
+                                    i.style.opacity = !hidden ? "0.35" : "1";
+                                    span.style.color = !hidden
+                                      ? "rgba(0,0,0,0.55)"
+                                      : "";
+
+                                    chart.data.datasets[idx].hidden = !hidden;
+                                    chart.update();
+                                  });
+                                });
+
+                                const chart = new Chart(canvas, {
+                                  type: "line",
+                                  data: { labels: hours, datasets: datasets },
+                                  options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    interaction: {
+                                      mode: "nearest",
+                                      intersect: false,
+                                    },
+                                    plugins: {
+                                      legend: { display: false },
+                                      tooltip: {
+                                        callbacks: {
+                                          label: (ctx) =>
+                                            `${ctx.dataset.label}: ${ctx.parsed.y}`,
+                                        },
+                                      },
+                                    },
+                                    scales: {
+                                      y: { beginAtZero: true },
+                                      x: {
+                                        title: {
+                                          display: true,
+                                          text: "Hour",
+                                        },
+                                      },
+                                    },
+                                  },
+                                });
+
+                                window.chart = chart;
+                                window.addEventListener("resize", () =>
+                                  chart.resize(),
+                                );
+                              },
+                            );
+                          </script>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Charts Tab -->
-                <div aria-labelledby="charts-tab" class="tab-pane fade" id="charts" role="tabpanel">
-                  <table id="myTable" class="table table-striped table-bordered text-center align-middle"
-                    style="width:100%">
-                    <thead>
-                      <tr>
-                        <th class="text-center">Date</th>
-                        <th class="text-center">Hour</th>
-                        <th class="text-center">Route</th>
-                        <th class="text-center">Total Count</th>
-                        <th class="text-center">By SmartCard</th>
-                        <th class="text-center">By QR</th>
-                        <th class="text-center">Number Of Buses</th>
-                        <th class="text-center">Operator</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tbody"></tbody>
-                  </table>
-
+                <!-- Table Tab -->
+                <div aria-labelledby="table-tab" class="tab-pane fade" id="table" role="tabpanel">
+                  <!-- Table with horizontal scroll container -->
+                  <div class="table-responsive-custom">
+                    <table id="myTable" class="table table-striped table-bordered text-center align-middle display"
+                      style="width:100%">
+                      <thead>
+                        <tr>
+                          <th class="text-center">Date</th>
+                          <th class="text-center">Hour</th>
+                          <th class="text-center">Route</th>
+                          <th class="text-center">Total Count</th>
+                          <th class="text-center">By SmartCard</th>
+                          <th class="text-center">By QR</th>
+                          <th class="text-center">Number Of Buses</th>
+                          <th class="text-center">Operator</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody"></tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
-
-
           </div>
         </div>
-      </div>
       </div>
 
       <script>
@@ -754,7 +792,19 @@
 
           const chartsTabEl = document.getElementById("charts-tab");
           chartsTabEl.addEventListener("shown.bs.tab", () => {
-            chart.resize();
+            // Resize charts when tab is shown
+            setTimeout(() => {
+              const charts = ['#deptBar', '#donutChart', '#pieChart'].map(id => echarts.init(document.querySelector(id)));
+              charts.forEach(chart => chart?.resize());
+            }, 100);
+          });
+          
+          const tableTabEl = document.getElementById("table-tab");
+          tableTabEl.addEventListener("shown.bs.tab", () => {
+            // Redraw DataTable when tab is shown to fix any rendering issues
+            setTimeout(() => {
+              $('#myTable').DataTable().columns.adjust().draw();
+            }, 100);
           });
         });
       </script>
@@ -804,7 +854,7 @@
       let headers = rows.shift().split(",");
       let data = rows.map((r) => r.split(","));
 
-      $("#myTable").DataTable({
+      $('#myTable').DataTable({
         data: data,
         columns: headers.map((h) => ({ title: h })),
         language: {
@@ -828,8 +878,10 @@
         },
         pageLength: 10,
         order: [[0, "asc"]],
-        responsive: false, // Turn off responsive to enable horizontal scroll
-        scrollX: false, // Let the container handle scrolling
+        responsive: false,
+        scrollX: false,
+        autoWidth: true,
+        destroy: true, // Allows reinitialization if needed
       });
     });
   </script>
