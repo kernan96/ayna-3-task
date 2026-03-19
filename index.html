@@ -38,7 +38,7 @@
       sizes="16x16"
       href="https://ayna.gov.az/assets/ui/favicon/favicon-16x16.png"
     />
-   
+
     <!-- Google Fonts -->
     <link href="https://fonts.gstatic.com/" rel="preconnect" />
     <link href="files/css.css" rel="stylesheet" />
@@ -161,28 +161,28 @@
     <!-- End Sidebar-->
 
     <main class="main" id="main">
-      <h5 class="mb-2">Select Region & Data Type:</h5>
-
-      <div
-        class="d-flex align-items-center gap-2 flex-wrap bg-light p-2 rounded"
-      >
-        <!-- Region Type Group -->
-        <div class="d-flex align-items-center gap-1">
-          <span class="fw-semibold">Region Type:</span>
-          <select id="regionFilter" class="form-select form-select-sm w-auto">
-            <option value="micro">Micro</option>
-            <option value="meso">Meso</option>
-            <option value="macro">Macro</option>
-          </select>
-        </div>
-
-        <!-- Data Type Group -->
-        <div class="d-flex align-items-center gap-1">
-          <span class="fw-semibold">Data Type:</span>
-          <select id="dataType" class="form-select form-select-sm w-auto">
-            <option value="population">Population</option>
-            <option value="tot_jobs">Jobs</option>
-          </select>
+      
+      <div class="filter-container">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-6">
+            <label for="regionFilter" class="form-label fw-semibold"
+              >Region Type</label
+            >
+            <select id="regionFilter" class="form-select">
+              <option value="micro">Micro</option>
+              <option value="meso">Meso</option>
+              <option value="macro">Macro</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="dataType" class="form-label fw-semibold"
+              >Data Type</label
+            >
+            <select id="dataType" class="form-select">
+              <option value="population">Population</option>
+              <option value="tot_jobs">Jobs</option>
+            </select>
+          </div>
         </div>
       </div>
 
